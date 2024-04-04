@@ -11,33 +11,45 @@ struct ContentView: View {
     @StateObject var locationManager = LocationManager()
     var weatherManager = WeatherManager()
     @State var weather: ResponseBody?
+    @State var responseError: Bool = false
     
     var body: some View {
         VStack {
-            
-            if let location = locationManager.location {
-                if let weather = weather {
-                    WeatherView(weather: weather)
-                } else {
-                    LoadingView()
-                        .task {
-                            do {
-                                weather = try await weatherManager.getCurrentWeather(latitude: location.latitude, longitude: location.longitude)
-                            } catch {
-                                print("Error getting weather: \(error)")
-                            }
-                        }
-                }
+            if responseError {
+                Text("An unexpected error occured")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                if locationManager.isLoading {
-                    LoadingView()
+                if let location = locationManager.location {
+                    if let weather = weather {
+                        WeatherView(weather: weather)
+                    } else {
+                        LoadingView()
+                            .task {
+                                do {
+                                    weather = try await weatherManager.getCurrentWeather(latitude: location.latitude, longitude: location.longitude)
+                                } catch {
+                                    print("Error getting weather: \(error)")
+                                    responseError = true
+                                }
+                            }
+                    }
                 } else {
-                    WelcomeScreen()
-                        .environmentObject(locationManager)
+                    if locationManager.isLoading {
+                        LoadingView()
+                    } else {
+                        WelcomeScreen()
+                            .environmentObject(locationManager)
+                    }
                 }
             }
         }
         .background(Color("AccentColor"))
+        .alert("Error!", isPresented: $responseError) {
+            Button("Retry", role: .cancel) {}
+            Button("Close", role: .destructive) { exit(0) }
+        } message: {
+            Text("Please check your internet connection!")
+        }
     }
 }
 

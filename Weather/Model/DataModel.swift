@@ -56,3 +56,10 @@ struct ResponseBody: Codable {
     let hourly: [Hourly]
 }
 
+//An enum to for weather errors
+enum WeatherError: Error {
+    case invalidURL
+    case invalidResponse
+    case requestFailed(Error)
+}
+
